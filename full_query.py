@@ -4,6 +4,9 @@
 # form public pages based on a keyword
 # search. Requires an access token
 # which is only valid for 1 month
+# Optional first arg is ID of FB to restart from
+# Optional second arg is URL to query when restarting
+# from middway through a page's comments
 ########################
 import json,requests
 import sys,csv,re
@@ -12,12 +15,14 @@ from time import gmtime, strftime
 
 v=False
 #v=True
-# Verbose flag
+# Flag for verbose printing
 
 outFile=None
+# File to deposit filtered content
 logFile=csv.writer(open('log.csv','a'),delimiter='\t')
+# Log file for requests
 
-ACCESSTOKEN=''
+ACCESSTOKEN='CAACEdEose0cBAKODv5yx7LZCYU0YsXeDBTaxEFC0XOxOyzBHvcLNiwDcxauy56ZAPyk8GTcRJZBfVYsXIpudUYXcCpDryy7DMhloeLPNAfus5oaWiqt9rDv6EqygizxTJAJEZCwbh0gIZAK50l8neqZCRe8YbkMweSHZAgUSev3rXlP7eiqJXyykxgvsh5dQbYZD'
 # Define access token
 # Needs updating every hour :-| from https://developers.facebook.com/tools/explorer/
 # Click 'Get Access Token'
@@ -25,6 +30,9 @@ ACCESSTOKEN=''
 # Create an app at developers.facebook.com,
 # get app iD and app secret and get long lasting key
 # curl 'https://graph.facebook.com/oauth/access_token?client_id=<app_id>&client_secret=<app_secret>&grant_type=client_credentials'
+
+ACCESSTOKEN='681571835211669|qiglQube0eaE9XFD0ycM5s21ZeQ'
+# This is long lasting app key
 
 LIMIT='5000'
 # 5000 is limit for pages
@@ -35,6 +43,7 @@ QUERY='Italy'
 #################
 def logQuery(url):
 #################
+# Makes an entry in log file of URL, ID of page queries and time
   global logFile
 
   pageId=url.partition('graph.facebook.com/')[2]
@@ -48,7 +57,7 @@ def matchesQuery(text):
 # Searches each piece of content for a
 # single search term returns true/false
   returnVal=False
-#  returnVal=True
+
   for t in text.split(' '):
     if v:print 'TESTING>>'+t+'<<',type(t)
     if t.decode('utf-8')==u'Pizza':
@@ -59,6 +68,8 @@ def matchesQuery(text):
 #################
 def parsePosts(rr,nPages,postIDs,category):
 #################
+# Cycles through all posts form a given FB page
+# if matching keywords, writes to file
   global outFile
   global logFile
 
@@ -69,10 +80,6 @@ def parsePosts(rr,nPages,postIDs,category):
         print 'DUPLICATE'
       else:
         postIDs.append(dd[u'id'])
-#        print dd.keys()
-
-#        outLine=[u'POST',dd[u'id'],dd[u'created_time']]
-#        outFile.writerow([o.encode('utf-8') for o in outLine])
 
         try:
           if v:print '\tMESSAGE',dd[u'message'].encode('utf-8')
@@ -98,11 +105,11 @@ def parsePosts(rr,nPages,postIDs,category):
             if matchesQuery(outLine[-2]):outFile.writerow([o for o in outLine])
         else:
           if v:print '!!! NO COMMENTS',dd.keys()
-#        sys.exit(1)
+
         if v:print '+++++++++++++++++++'
       if v:print ''
       nPages+=1
-#    sys.exit(1)
+
     return nPages,postIDs
   except:
     print 'MISSING data KEY',rr.keys()
@@ -112,7 +119,8 @@ def main():
 ########################
   global outFile
   restartOffset=0
-
+###################################
+# Parse args
   if len(sys.argv)==2:
     restartId=sys.argv[1]
     outFile=csv.writer(open('out.csv','a'),delimiter='\t')
@@ -140,7 +148,7 @@ def main():
   # skip is flag to skip FB pages until restartId is found
   # commentsPageSkip is flag to skip pages of comments on a
   # FB page matching restartId until restartCommentsPage is found
-
+###################################
   tempUrl='https://graph.facebook.com/search?q='+QUERY+'&limit='+LIMIT+'&type=page&access_token='+ACCESSTOKEN
   r=requests.get(tempUrl).json()
   logQuery(tempUrl)
@@ -150,12 +158,12 @@ def main():
     print 'EXPIRED????',r
     sys.exit(1)
 ################################################
-  for page in r[u'data']:
+  for p,page in enumerate(r[u'data']):
 # Each page has 'category','name','id'
     try:
-      print 'PAGE',page[u'name'],page[u'category'],page[u'id']
+      print 'PAGE #',p,page[u'name'],page[u'category'],page[u'id']
     except:
-      print ''
+      print '!!!!!!!PAGE ERROR'
 
     if page[u'id']==restartId:
       skip=False
@@ -165,7 +173,7 @@ def main():
       tempUrl='https://graph.facebook.com/'+page[u'id']+'/posts?'+'&limit='+LIMIT+'&access_token='+ACCESSTOKEN
       rr=requests.get(tempUrl).json()
       logQuery(tempUrl)
-# Try to get the posts
+      # Try to get the posts
 
       while u'error' in rr.keys():
 
@@ -195,15 +203,13 @@ def main():
       outFile.writerow(['PAGE',page[u'id'],page[u'name'].encode('utf-8'),page[u'category'].encode('utf-8')])
 
       if not errorSkip and not commentsPageSkip:
-# If API has caused 3 errors, skip
-# Or if restarting from a later comments page, skip
+      # If API has caused 3 errors, skip
+      # Or if restarting from a later comments page, skip
         nPages,postIDs=parsePosts(rr,nPages,postIDs,page[u'category'].encode('utf-8'))
 
-#  while 'next' in rr[u'paging'].keys():
       while 'paging' in rr.keys():
 
-#    print rr.keys()
-#    print 'LOADING',rr[u'paging'][u'next']
+        if v:print 'LOADING',rr[u'paging'][u'next']
 
         rrrRaw=requests.get(rr[u'paging'][u'next'])
         logQuery(rr[u'paging'][u'next'])
@@ -214,8 +220,6 @@ def main():
         # If we want to restart from last page
         elif restartCommentsPage and restartId==page['id']:
           print '**********DIDNT MATCH COMMENTS RESTART PAGE'
-#          print restartCommentsPage
-#          print rr['paging']['next']
           restartOffset+=1
 
         try:
@@ -226,7 +230,7 @@ def main():
         while u'error' in rrr.keys():
 
           if rrr[u'error'][u'code'] in [1,2]:
-        # API error
+          # API error
             print 'API ERROR: SLEEPING....'
             time.sleep(10)
             print 'RETRYING'
@@ -236,7 +240,7 @@ def main():
               errorSkip=True
               break
           else:
-        # TOKEN ERROR
+          # TOKEN ERROR ?
             print '********ERROR',rrr['error']
             sys.exit(1)
 
@@ -247,7 +251,6 @@ def main():
 
         if not commentsPageSkip:
           print '# COMMENTS PAGES',nPages,'# OFFSET',restartOffset,'# POSTS',len(postIDs),strftime("%H:%M:%S", time.localtime())
-#        print rrr.keys()
 
         if (not errorSkip and not commentsPageSkip) or not skip:
         # If API has caused 3 errors
@@ -264,7 +267,6 @@ def main():
       restartOffset=0
     else:
       print 'SKIPPING.....'
-#    sys.exit(1)
   print 'FINISHED'
 #####
 if __name__=='__main__':

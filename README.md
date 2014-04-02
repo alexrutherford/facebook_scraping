@@ -6,4 +6,4 @@ Allows for restarts at a particular page.
 
 ##Requirements
 
-Requires requests library
+Requires [requests library](http://docs.python-requests.org/en/latest/)
