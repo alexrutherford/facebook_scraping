@@ -22,7 +22,7 @@ outFile=None
 logFile=csv.writer(open('log.csv','a'),delimiter='\t')
 # Log file for requests
 
-ACCESSTOKEN='CAACEdEose0cBAKODv5yx7LZCYU0YsXeDBTaxEFC0XOxOyzBHvcLNiwDcxauy56ZAPyk8GTcRJZBfVYsXIpudUYXcCpDryy7DMhloeLPNAfus5oaWiqt9rDv6EqygizxTJAJEZCwbh0gIZAK50l8neqZCRe8YbkMweSHZAgUSev3rXlP7eiqJXyykxgvsh5dQbYZD'
+ACCESSTOKEN=''
 # Define access token
 # Needs updating every hour :-| from https://developers.facebook.com/tools/explorer/
 # Click 'Get Access Token'
@@ -30,9 +30,6 @@ ACCESSTOKEN='CAACEdEose0cBAKODv5yx7LZCYU0YsXeDBTaxEFC0XOxOyzBHvcLNiwDcxauy56ZAPy
 # Create an app at developers.facebook.com,
 # get app iD and app secret and get long lasting key
 # curl 'https://graph.facebook.com/oauth/access_token?client_id=<app_id>&client_secret=<app_secret>&grant_type=client_credentials'
-
-ACCESSTOKEN='681571835211669|qiglQube0eaE9XFD0ycM5s21ZeQ'
-# This is long lasting app key
 
 LIMIT='5000'
 # 5000 is limit for pages
