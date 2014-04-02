@@ -4,6 +4,6 @@ Some complex logic is in place to handle bad requests either due to API downtime
 
 Allows for restarts at a particular page.
 
-**Requirements
+##Requirements
 
 Requires requests library
