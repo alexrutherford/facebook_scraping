@@ -9,7 +9,7 @@
 # from middway through a page's comments
 ########################
 import json,requests
-import sys,csv,re
+import sys,csv,re,os
 import time
 from time import gmtime, strftime
 
@@ -25,7 +25,7 @@ logFile=csv.writer(open('log.csv','a'),delimiter='\t')
 trashFile=csv.writer(open('trash.txt','w'),delimiter='\t')
 # File for writing weird bits of content I don't understand yet
 
-ACCESSTOKEN='CAACEdEose0cBAKODv5yx7LZCYU0YsXeDBTaxEFC0XOxOyzBHvcLNiwDcxauy56ZAPyk8GTcRJZBfVYsXIpudUYXcCpDryy7DMhloeLPNAfus5oaWiqt9rDv6EqygizxTJAJEZCwbh0gIZAK50l8neqZCRe8YbkMweSHZAgUSev3rXlP7eiqJXyykxgvsh5dQbYZD'
+ACCESSTOKEN=''
 # Define access token
 # Needs updating every hour :-| from https://developers.facebook.com/tools/explorer/
 # Click 'Get Access Token'
@@ -34,26 +34,16 @@ ACCESSTOKEN='CAACEdEose0cBAKODv5yx7LZCYU0YsXeDBTaxEFC0XOxOyzBHvcLNiwDcxauy56ZAPy
 # get app iD and app secret and get long lasting key
 # curl 'https://graph.facebook.com/oauth/access_token?client_id=<app_id>&client_secret=<app_secret>&grant_type=client_credentials'
 
-ACCESSTOKEN='681571835211669|qiglQube0eaE9XFD0ycM5s21ZeQ'
+ACCESSTOKEN=''
 # This is long lasting app key
 
 LIMIT='5000'
 # 5000 is limit for pages
 
-QUERY='سوريا'
-QUERY='دمشق'
-QUERY='حمص'
-#QUERY='ادلب'
-#QUERY='دير الزور'
-QUERY='شلل الاطفال'
-#QUERY='بوليو'
+QUERY='Italy'
 # Query to grab pages
 
-terms=[u'شلل',u'بوليو',u'لقاح',u'تطعيم',u'پوليو']
-#terms=[u'سوريا',u'سوري',u'سورية',u'انا',u'اسد',u'الاسد',u'الأسد',u'لا']
-#terms.append(u'علي')
-#terms.append(u'لن')
-terms.extend([u'polio',u'vaccination',u'injection',u'opv',u'o.p.v.',u'ipv',u'i.p.v.'])
+terms=['fish']
 
 regexString='|'.join(terms)
 matchRe=re.compile(regexString)
@@ -83,11 +73,8 @@ def matchesQuery(text,outFile):
   res=re.search(regexString,text,re.UNICODE|re.IGNORECASE)
   if res:
     returnVal=True
-#    print 'TEXT',text
-#    print 'GROUPS',res.group()
     outFile.writerow(['MATCH',res.group().encode('utf-8')])
     # Log each match
-#    sys.exit(1)
   return returnVal
 #################
 def parsePosts(rr,nPages,nPosts,category):
@@ -148,20 +135,9 @@ def parsePosts(rr,nPages,nPosts,category):
       elif dd[u'type']==u'video':
         outLine=['VIDEO',dd[u'id'],dd[u'created_time']]
         contentString=''
-#        if v:print 'VIDEO'
-#        print  dd
-#        print dd[u'id']
-#        time.sleep(100000)
-#        sys.exit(1)
-        '''
-        try:
-          xxx=requests.get('https://graph.facebook.com/'+dd[u'id']+'/comments?access_token='+ACCESSTOKEN)
-        except:
-          print 'FAILED'
-        if len(xxx.json()[u'data'])>0:
-          print 'VIDEO',xxx.json()
-          sys.exit(1)
-       '''
+        if u'link' in dd.keys(): trashFile.writerow([dd[u'link'].encode('utf-8')])
+        trashFile.writerow(dd.keys())
+
         for k in [u'description',u'message',u'caption']:
           if k in dd.keys():
             contentString+='|'+dd[k].replace('\n','|')
@@ -176,19 +152,9 @@ def parsePosts(rr,nPages,nPosts,category):
         # likes
         outLine=['STATUS',dd[u'id'],dd[u'created_time']]
         contentString=''
-#        if v:print 'STATUS'
-#        print dd
-#        print dd[u'id']
-#        sys.exit(1)
-        '''
-        try:
-          xxx=requests.get('https://graph.facebook.com/'+dd[u'id']+'/comments?access_token='+ACCESSTOKEN)
-        except:
-          print 'FAILED'
-        if len(xxx.json()[u'data'])>0:
-          print 'STATUS',xxx.json()
-          sys.exit(1)
-        '''
+        if u'link' in dd.keys(): trashFile.writerow([dd[u'link'].encode('utf-8')])
+        trashFile.writerow(dd.keys())
+
         for k in [u'message']:
           if k in dd.keys():
             contentString+='|'+dd[k].replace('\n','|')
@@ -203,18 +169,9 @@ def parsePosts(rr,nPages,nPosts,category):
         # likes
         outLine=['PHOTO',dd[u'id'],dd[u'created_time']]
         contentString=''
-#        if v:print 'PHOTO',dd[u'link']
-#        print dd
-#        sys.exit(1)
-        '''
-        try:
-          xxx=requests.get('https://graph.facebook.com/'+dd[u'id']+'/comments?access_token='+ACCESSTOKEN)
-        except:
-          print 'FAILED'
-        if len(xxx.json()[u'data'])>0:
-          print 'PHOTO',xxx.json()
-          sys.exit(1)
-        '''
+        if u'link' in dd.keys(): trashFile.writerow([dd[u'link'].encode('utf-8')])
+        trashFile.writerow(dd.keys())
+
         for k in [u'picture',u'message']:
           if k in dd.keys():
             contentString+='|'+dd[k].replace('\n','|')
@@ -229,16 +186,9 @@ def parsePosts(rr,nPages,nPosts,category):
         # likes
         outLine=['LINK',dd[u'id'],dd[u'created_time']]
         contentString=''
-#        if v:print 'LINK',dd[u'link']
-        '''
-        try:
-          xxx=requests.get('https://graph.facebook.com/'+dd[u'id']+'/comments?access_token='+ACCESSTOKEN)
-        except:
-          print 'FAILED'
-        if len(xxx.json()[u'data'])>0:
-          print 'LINK',xxx.json()
-          sys.exit(1)
-        '''
+        if u'link' in dd.keys(): trashFile.writerow([dd[u'link'].encode('utf-8')])
+        trashFile.writerow(dd.keys())
+
         for k in [u'description',u'message']:
           if k in dd.keys():
             contentString+='|'+dd[k].replace('\n','|')
@@ -289,24 +239,28 @@ def main():
   if len(sys.argv)==2:
     restartId=sys.argv[1]
 #    outFile=csv.writer(open('out_'+QUERY.encode('utf-8')+'.csv','a'),delimiter='\t')
-    outFile=csv.writer(open('out_'+QUERY+'.csv','a'),delimiter='\t')
     skip=True
     commentsPageSkip=False
     print '******APPENDING TO FILE','out_'+QUERY+'.csv'
     print '******RESTARTING FROM PAGE',restartId
+    raw_input('IS THIS OK?')
+    outFile=csv.writer(open('out_'+QUERY+'.csv','a'),delimiter='\t')
     restartCommentsPage=None
   elif len(sys.argv)==3:
     restartId=sys.argv[1]
     restartCommentsPage=sys.argv[2]
-    outFile=csv.writer(open('out_'+QUERY+'.csv','a'),delimiter='\t')
 #    outFile=csv.writer(open('out_'+QUERY.encode('utf-8')+'.csv','a'),delimiter='\t')
     skip=True
     commentsPageSkip=True
     print '******APPENDING TO FILE','out_'+QUERY+'.csv'
     print '******RESTARTING FROM POSTS PAGE',restartCommentsPage
+    raw_input('IS THIS OK?')
+    outFile=csv.writer(open('out_'+QUERY+'.csv','a'),delimiter='\t')
   else:
-    outFile=csv.writer(open('out_'+QUERY+'.csv','w'),delimiter='\t')
     print '******OPENING OUTFILE','out_'+QUERY+'.csv'
+    if 'out_'+QUERY+'.csv' in os.listdir('.'):print '!!!!!WILL OVERWRITE'
+    raw_input('IS THIS OK?')
+    outFile=csv.writer(open('out_'+QUERY+'.csv','w'),delimiter='\t')
     skip=False
     commentsPageSkip=False
     restartCommentsPage=None
@@ -332,6 +286,7 @@ def main():
   for p,page in enumerate(r[u'data']):
 # Each page has 'category','name','id'
     errorSkip=False
+    nError=0
 
     try:
       print 'PAGE #',p,'('+str(len(r[u'data']))+')',page[u'name'],page[u'category'],page[u'id'],strftime("%H:%M:%S", time.localtime())
@@ -344,8 +299,8 @@ def main():
 
     if not skip:
       tempUrl='https://graph.facebook.com/'+page[u'id']+'/posts?'+'&limit='+LIMIT+'&access_token='+ACCESSTOKEN
-      rr=requests.get(tempUrl).json()
       logQuery(tempUrl)
+      rr=requests.get(tempUrl).json()
       # Try to get the posts
 
       while u'error' in rr.keys() or u'error_msg' in rr.keys():
@@ -354,19 +309,20 @@ def main():
           print 'API ERROR: SLEEPING....'
           print rr
           time.sleep(60)
-          print 'RETRYING'
+          print 'RETRYING (1)'
           nError+=1
           if nError==10:
             print nError,'ERRORS - SKIPPING'
+            errorSkip=True
             break
         else:
         # TOKEN ERROR
           print '********ERROR',rr[u'error']
           sys.exit(1)
         tempUrl='https://graph.facebook.com/'+page[u'id']+'/posts?'+'&limit='+LIMIT+'&access_token='+ACCESSTOKEN
-        rr=requests.get(tempUrl)
-        print 'rr',rr
-        rr=rr.json()
+        rrtemp=requests.get(tempUrl)
+        print 'rrtemp',rrtemp,rrtemp.text
+        rr=rrtemp.json()
         logQuery(tempUrl)
         # Try to get the posts again
 
